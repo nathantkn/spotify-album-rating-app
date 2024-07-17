@@ -2,6 +2,7 @@
 import "./App.css";
 import { FormControl, InputGroup, Container, Button, Row, Card } from "react-bootstrap";
 import { useState, useEffect } from "react";
+import StarRating from "./StarRating";
 
 const clientId = import.meta.env.VITE_CLIENT_ID;
 const clientSecret = import.meta.env.VITE_CLIENT_SECRET;
@@ -10,6 +11,8 @@ function App() {
   const [searchInput, setSearchInput] = useState("");
   const [accessToken, setAccessToken] = useState("");
   const [albums, setAlbums] = useState([]);
+  const [ratings, setRatings] = useState({});
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
 
   useEffect(() => {
     let authParams = {
@@ -28,9 +31,15 @@ function App() {
       .then((data) => {
         setAccessToken(data.access_token);
       });
+    
+    const savedRatings = localStorage.getItem("albumRatings");
+    if (savedRatings) {
+      setRatings(JSON.parse(savedRatings));
+    }
   }, []);
 
   async function search() {
+    setShowWelcomeMessage(false);
     let artistParams = {
       method: "GET",
       headers: {
@@ -62,9 +71,23 @@ function App() {
       });
   }
 
+  const handleRatingChange = (albumId, rating) => {
+    const newRatings = {
+      ...ratings,
+      [albumId]: rating,
+    };
+    setRatings(newRatings);
+    localStorage.setItem("albumRatings", JSON.stringify(newRatings));
+  };
+
   return (
     <>
       <Container>
+        {showWelcomeMessage && (
+          <div style={{ marginBottom: "20px", fontSize: "18px", fontWeight: "bold" }}>
+            Welcome to the Album Rating System! Enter an artist's name to start.
+          </div>
+        )}
         <InputGroup>
           <FormControl
             placeholder="Search For Artist"
@@ -132,13 +155,11 @@ function App() {
                   >
                     {album.name}
                   </Card.Title>
-                  <Card.Text
-                    style={{
-                      color: "black",
-                    }}
-                  >
-                    Release Date: <br /> {album.release_date}
-                  </Card.Text>
+                  <StarRating
+                    rating={ratings[album.id] || 0}
+                    setRating={(rating) => handleRatingChange(album.id, rating)}
+                  />
+                  <div style={{ marginTop: "10px" }}>
                   <Button
                     href={album.external_urls.spotify}
                     style={{
@@ -152,6 +173,7 @@ function App() {
                   >
                     Album Link
                   </Button>
+                  </div>
                 </Card.Body>
               </Card>
             );

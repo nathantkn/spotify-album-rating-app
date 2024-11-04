@@ -13,6 +13,8 @@ function App() {
   const [albums, setAlbums] = useState([]);
   const [ratings, setRatings] = useState({});
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
+  const [sortByName, setSortByName] = useState(false);
+  const [searchExecuted, setSearchExecuted] = useState(false);
 
   useEffect(() => {
     let authParams = {
@@ -38,8 +40,15 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    if (accessToken && searchInput) {
+      search();
+    }
+  }, [sortByName]);
+
   async function search() {
     setShowWelcomeMessage(false);
+    setSearchExecuted(true);
     let artistParams = {
       method: "GET",
       headers: {
@@ -67,7 +76,11 @@ function App() {
     )
       .then((result) => result.json())
       .then((data) => {
-        setAlbums(data.items);
+        let albums = data.items;
+        if (sortByName) {
+          albums = albums.sort((a, b) => a.name.localeCompare(b.name));
+        }
+        setAlbums(albums);
       });
   }
 
@@ -110,9 +123,18 @@ function App() {
             }}
           />
 
-          <Button onClick={search}>Search</Button>
+          <Button onClick={search} style={{ marginRight: "10px" }}>Search</Button>
+          <Button onClick={() => setSortByName(!sortByName)}>
+            Sort
+          </Button>
         </InputGroup>
       </Container>
+
+      {searchExecuted && (
+        <div style={{ marginTop: "10px", fontSize: "12px" }}>
+          {sortByName ? "Sorted by Name" : "Sorted by Release Date"}
+        </div>
+      )}
 
       <Container>
         <Row
